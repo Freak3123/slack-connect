@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import axios from "axios"
 import { ConnectSlack } from "@/components/ConnectSlack"
 import { MessageComposer, Recipient } from "@/components/MessageComposer"
 import { MessagesList, ScheduledMessage, SentMessage } from "@/components/MessagesList"
@@ -12,46 +13,23 @@ const MOCK_RECIPIENTS: Recipient[] = [
   { id: "U04STUVWX", name: "john.doe", type: "user" },
   { id: "U05YZABCD", name: "jane.smith", type: "user" },
 ]
+interface ScheduledMessageAPI {
+  id?: string;
+  scheduled_message_id?: string;
+  text?: string;
+  message?: string;
+  post_at?: number;
+  scheduledTime?: string;
+  status?: string;
+}
 
-const MOCK_SCHEDULED_MESSAGES: ScheduledMessage[] = [
-  {
-    id: "sch_1",
-    targetId: "C01ABCDEF",
-    recipientName: "general",
-    recipientType: "channel",
-    message: "Daily standup reminder!",
-    scheduledTime: new Date(Date.now() + 3600 * 1000).toISOString(),
-    status: "pending",
-  },
-  {
-    id: "sch_2",
-    targetId: "U04STUVWX",
-    recipientName: "john.doe",
-    recipientType: "user",
-    message: "Hey John, quick question about the report.",
-    scheduledTime: new Date(Date.now() + 7200 * 1000).toISOString(),
-    status: "pending",
-  },
-]
-
-const MOCK_SENT_MESSAGES: SentMessage[] = [
-  {
-    id: "ts_1",
-    targetId: "C01ABCDEF",
-    recipientName: "general",
-    recipientType: "channel",
-    message: "Hello everyone!",
-    sentTime: new Date(Date.now() - 86400 * 1000).toISOString(),
-  },
-  {
-    id: "ts_2",
-    targetId: "U05YZABCD",
-    recipientName: "jane.smith",
-    recipientType: "user",
-    message: "Just sent you the files.",
-    sentTime: new Date(Date.now() - 172800 * 1000).toISOString(),
-  },
-]
+interface SentMessageAPI {
+  id?: string;
+  ts?: string;
+  text?: string;
+  message?: string;
+  sentTime?: string;
+}
 
 export default function Home() {
   const [isConnected, setIsConnected] = useState(false)
@@ -61,14 +39,10 @@ export default function Home() {
   const [selectedRecipientType, setSelectedRecipientType] = useState<"channel" | "user">("channel")
   const [message, setMessage] = useState("")
   const [scheduledDateTime, setScheduledDateTime] = useState("")
-  const [scheduledMessages, setScheduledMessages] = useState<ScheduledMessage[]>(MOCK_SCHEDULED_MESSAGES)
-  const [sentMessages, setSentMessages] = useState<SentMessage[]>(MOCK_SENT_MESSAGES)
+  const [scheduledMessages, setScheduledMessages] = useState<ScheduledMessage[]>([])
+  const [sentMessages, setSentMessages] = useState<SentMessage[]>([])
   const [loading, setLoading] = useState(false)
 
-  // Remove initial effect that forces disconnected
-  // Instead start disconnected and show connect screen
-
-  // Set default recipient on connect
   useEffect(() => {
     if (isConnected && recipients.length > 0 && !selectedRecipientId) {
       setSelectedRecipientId(recipients[0].id)
@@ -77,16 +51,60 @@ export default function Home() {
     }
   }, [isConnected, selectedRecipientId, recipients])
 
-  // Filter messages when recipient changes
+  // Fetch messages when selectedRecipientId or type changes
   useEffect(() => {
     if (selectedRecipientId) {
-      setScheduledMessages(MOCK_SCHEDULED_MESSAGES.filter((m) => m.targetId === selectedRecipientId))
-      setSentMessages(MOCK_SENT_MESSAGES.filter((m) => m.targetId === selectedRecipientId))
+      fetchMessages()
     } else {
       setScheduledMessages([])
       setSentMessages([])
     }
-  }, [selectedRecipientId])
+  }, [selectedRecipientId, selectedRecipientType])
+
+  // Fetch messages from API
+  const fetchMessages = async () => {
+    setLoading(true)
+    try {
+      const res = await axios.get("/api/messages", {
+        params: { id: selectedRecipientId, type: selectedRecipientType },
+      })
+
+      const data = res.data
+
+      setScheduledMessages(
+        (data.scheduled || []).map((msg: ScheduledMessageAPI) => ({
+          id: msg.scheduled_message_id || msg.id,
+          targetId: selectedRecipientId,
+          recipientName: selectedRecipientName,
+          recipientType: selectedRecipientType,
+          message: msg.text || msg.message,
+          scheduledTime: msg.post_at
+            ? new Date(msg.post_at * 1000).toISOString()
+            : msg.scheduledTime,
+          status: msg.status || "pending",
+        }))
+      )
+
+      setSentMessages(
+        (data.history || data.sent || []).map((msg: SentMessageAPI) => ({
+          id: msg.ts || msg.id,
+          targetId: selectedRecipientId,
+          recipientName: selectedRecipientName,
+          recipientType: selectedRecipientType,
+          message: msg.text || msg.message,
+          sentTime: msg.ts
+            ? new Date(Number(msg.ts.split(".")[0]) * 1000).toISOString()
+            : msg.sentTime,
+        }))
+      )
+    } catch (error) {
+      console.error("❌ Failed to fetch messages:", error)
+      setScheduledMessages([])
+      setSentMessages([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleRecipientChange = (id: string) => {
     const r = recipients.find((r) => r.id === id)
@@ -102,23 +120,34 @@ export default function Home() {
     setIsConnected(true)
   }
 
-  const sendMessage = (immediate: boolean) => {
+  // Cancel scheduled message, call backend then refresh
+  const cancelMessage = async (messageId: string, targetId: string) => {
     setLoading(true)
+    try {
+      await axios.delete("/api/delete-schedule", {
+        data: { scheduled_message_id: messageId, channelId: targetId },
+        headers: { "Content-Type": "application/json" },
+      })
+      await fetchMessages()
+    } catch (error) {
+      console.error("❌ Failed to cancel scheduled message:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const sendMessage = (immediate: boolean) => {
+    // You can extend this to call your send/schedule API routes
     alert(
       `Action: ${immediate ? "Send Now" : "Schedule"}\nRecipient: ${
         selectedRecipientType === "channel" ? "#" : "@"
-      }${selectedRecipientName}\nMessage: ${message}\nTime: ${immediate ? "Now" : scheduledDateTime}`,
+      }${selectedRecipientName}\nMessage: ${message}\nTime: ${
+        immediate ? "Now" : scheduledDateTime
+      }`,
     )
     setMessage("")
     setScheduledDateTime("")
-    setLoading(false)
-  }
-
-  const cancelMessage = (messageId: string, targetId: string) => {
-    setLoading(true)
-    alert(`Action: Cancel Message\nID: ${messageId}\nRecipient ID: ${targetId}`)
-    setScheduledMessages((prev) => prev.filter((m) => m.id !== messageId))
-    setLoading(false)
+    fetchMessages()
   }
 
   if (!isConnected) {

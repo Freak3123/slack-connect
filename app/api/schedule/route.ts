@@ -22,8 +22,12 @@ export async function POST(req: Request) {
     );
 
     return NextResponse.json(response.data);
-  } catch (error: any) {
-    console.error("❌ Failed to schedule message:", error?.response?.data || error);
+  } catch (error) {
+    if (error && typeof error === "object" && "response" in error && error.response && typeof error.response === "object" && "data" in error.response) {
+      console.error("❌ Failed to schedule message:", error.response.data);
+    } else {
+      console.error("❌ Failed to schedule message:", error);
+    }
     return NextResponse.json(
       { error: "Failed to schedule message" },
       { status: 500 }

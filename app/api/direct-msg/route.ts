@@ -20,8 +20,22 @@ export async function POST(req: Request) {
     );
 
     return NextResponse.json(backendResponse.data);
-  } catch (error: any) {
-    console.error("Error sending message:", error?.response?.data || error);
+  } catch (error) {
+    if (
+      error &&
+      typeof error === "object" &&
+      "response" in error &&
+      error.response &&
+      typeof error.response === "object" &&
+      "data" in (error.response as Record<string, unknown>)
+    ) {
+      console.error(
+        "Error sending message:",
+        (error.response as { data?: unknown }).data
+      );
+    } else {
+      console.error("Error sending message:", error);
+    }
     return NextResponse.json(
       { error: "Failed to send message" },
       { status: 500 }

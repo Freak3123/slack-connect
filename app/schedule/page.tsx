@@ -14,6 +14,16 @@ type SentMsg = {
   text: string;
 };
 
+export type MessagesResponse = {
+  scheduled?: ScheduledMsg[];
+  history?: SentMsg[];
+};
+interface ScheduleBody {
+  targetId: string;
+  message: string;
+  time?: number;
+}
+
 export default function Home() {
   const [targetId, setTargetId] = useState("");
   const [messageText, setMessageText] = useState("");
@@ -57,7 +67,7 @@ export default function Home() {
   const scheduleMessage = async () => {
     try {
       const hasTime = Boolean(sendTime);
-      const body: any = {
+      const body: ScheduleBody = {
         targetId,
         message: messageText,
       };

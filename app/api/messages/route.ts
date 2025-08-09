@@ -1,5 +1,15 @@
 import { NextResponse } from "next/server";
 import axios from "axios";
+interface ScheduledMessage {
+  id: string;
+  [key: string]: unknown;
+}
+
+interface MessagesResponse {
+  scheduled?: ScheduledMessage[];
+  [key: string]: unknown;
+}
+
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -11,7 +21,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const res = await axios.get(`${process.env.BACKEND_URL}/messages`, {
+    const res = await axios.get<MessagesResponse>(`${process.env.BACKEND_URL}/messages`, {
       params: { id, type: type || "" },
       headers: { "Content-Type": "application/json" },
     });
@@ -19,15 +29,22 @@ export async function GET(req: Request) {
     // Add scheduled_message_id alias safely if scheduled messages exist
     const data = res.data;
     if (data.scheduled) {
-      data.scheduled = (data.scheduled || []).map((msg: any) => ({
+      data.scheduled = (data.scheduled || []).map((msg) => ({
         ...msg,
         scheduled_message_id: msg.id,
       }));
     }
 
     return NextResponse.json(data, { status: res.status });
-  } catch (error: any) {
-    console.error("❌ Failed to fetch messages:", error.response?.data || error.message);
+  } catch (error) {
+    if (error && typeof error === "object" && "response" in error && error.response && typeof error.response === "object" && "data" in error.response) {
+  
+      console.error("❌ Failed to fetch messages:", error.response.data);
+    } else if (error instanceof Error) {
+      console.error("❌ Failed to fetch messages:", error.message);
+    } else {
+      console.error("❌ Failed to fetch messages:", error);
+    }
     return NextResponse.json(
       { error: "Failed to fetch messages" },
       { status: 500 }

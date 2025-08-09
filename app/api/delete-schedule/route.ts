@@ -23,11 +23,14 @@ export async function DELETE(req: Request) {
     );
 
     return NextResponse.json(backendRes.data, { status: backendRes.status });
-  } catch (error: any) {
-    console.error(
-      "❌ Failed to delete scheduled message:",
-      error.response?.data || error.message
-    );
+  } catch (error) {
+    if (error && typeof error === "object" && "response" in error && error.response && typeof error.response === "object" && "data" in error.response) {
+      console.error("❌ Failed to delete scheduled message:", error.response.data);
+    } else if (error instanceof Error) {
+      console.error("❌ Failed to delete scheduled message:", error.message);
+    } else {
+      console.error("❌ Failed to delete scheduled message:", error);
+    }
     return NextResponse.json(
       { error: "Failed to delete scheduled message" },
       { status: 500 }
