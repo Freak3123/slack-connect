@@ -15,7 +15,7 @@ export async function DELETE(req: Request) {
     }
 
     const backendRes = await axios.delete(
-      `${process.env.NEXT_PUBLIC_BACKEND_URL}/delete`,
+      `${process.env.BACKEND_URL}/delete`,
       {
         data: { scheduled_message_id, channelId }, // axios DELETE body
         headers: { "Content-Type": "application/json" },

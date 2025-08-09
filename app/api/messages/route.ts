@@ -11,7 +11,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/messages`, {
+    const res = await axios.get(`${process.env.BACKEND_URL}/messages`, {
       params: { id, type: type || "" },
       headers: { "Content-Type": "application/json" },
     });
