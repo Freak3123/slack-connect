@@ -1,7 +1,7 @@
-// app/page.tsx
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 type ScheduledMsg = {
   scheduled_message_id: string;
@@ -15,9 +15,9 @@ type SentMsg = {
 };
 
 export default function Home() {
-  const [targetId, setTargetId] = useState('');
-  const [messageText, setMessageText] = useState('');
-  const [sendTime, setSendTime] = useState('');
+  const [targetId, setTargetId] = useState("");
+  const [messageText, setMessageText] = useState("");
+  const [sendTime, setSendTime] = useState("");
   const [scheduled, setScheduled] = useState<ScheduledMsg[]>([]);
   const [history, setHistory] = useState<SentMsg[]>([]);
   const [loading, setLoading] = useState(false);
@@ -27,12 +27,14 @@ export default function Home() {
     if (!targetId) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/messages?id=${targetId}`);
-      const data = await res.json();
-      setScheduled(data.scheduled || []);
-      setHistory(data.history || []);
+      const res = await axios.get(`/api/messages`, {
+        params: { id: targetId },
+      });
+      console.log("Fetched messages:", res.data.scheduled);
+      setScheduled(res.data.scheduled || []);
+      setHistory(res.data.history || []);
     } catch (err) {
-      console.error('❌ Failed to fetch messages:', err);
+      console.error("❌ Failed to fetch messages:", err);
     } finally {
       setLoading(false);
     }
@@ -41,44 +43,44 @@ export default function Home() {
   // Cancel scheduled message
   const cancelMessage = async (id: string, channel: string) => {
     try {
-      await fetch(`/api/deleter`, {
-        method: 'POST',
-        body: JSON.stringify({ scheduled_message_id: id, channelId: channel }),
-        headers: { 'Content-Type': 'application/json' },
+      await axios.delete(`/api/delete-schedule`, {
+        data: { scheduled_message_id: id, channelId: channel },
+        headers: { "Content-Type": "application/json" },
       });
       fetchMessages();
     } catch (err) {
-      console.error('❌ Failed to delete message:', err);
+      console.error("❌ Failed to delete message:", err);
     }
   };
 
   // Send or schedule message
   const scheduleMessage = async () => {
     try {
+      const hasTime = Boolean(sendTime);
       const body: any = {
-        targetId:targetId,
+        targetId,
         message: messageText,
-        time: sendTime ? new Date(sendTime).getTime() / 1000 : Math.floor(Date.now() / 1000) + 86400, // default to 1 day later if no time provided
-        
- 
       };
-      if (sendTime) body.time = sendTime;
 
-      await fetch(`/api/schedule`, {
-        method: 'POST',
-        body: JSON.stringify(body),
-        headers: { 'Content-Type': 'application/json' },
+      if (hasTime) {
+        body.time = Math.floor(new Date(sendTime).getTime() / 1000);
+      }
+
+      const endpoint = hasTime ? "/api/schedule" : "/api/direct-msg";
+
+      await axios.post(endpoint, body, {
+        headers: { "Content-Type": "application/json" },
       });
 
-      setMessageText('');
-      setSendTime('');
+      setMessageText("");
+      setSendTime("");
       fetchMessages();
     } catch (err) {
-      console.error('❌ Failed to send/schedule message:', err);
+      console.error("❌ Failed to send/schedule message:", err);
     }
   };
 
-  // Auto-refresh countdown timer every second
+  // Auto-refresh countdown every second
   useEffect(() => {
     const interval = setInterval(() => {
       setScheduled((msgs) => [...msgs]);
@@ -121,7 +123,7 @@ export default function Home() {
           onClick={scheduleMessage}
           className="bg-blue-500 text-white px-4 py-2 rounded"
         >
-          {sendTime ? 'Schedule Message' : 'Send Now'}
+          {sendTime ? "Schedule Message" : "Send Now"}
         </button>
       </div>
 
@@ -146,8 +148,8 @@ export default function Home() {
                     <div>
                       <p>{msg.text}</p>
                       <p className="text-sm text-gray-600">
-                        Scheduled for:{' '}
-                        {new Date(msg.post_at * 1000).toLocaleString()} · ⏱️{' '}
+                        Scheduled for:{" "}
+                        {new Date(msg.post_at * 1000).toLocaleString()} · ⏱️{" "}
                         {secondsLeft}s left
                       </p>
                     </div>
@@ -178,9 +180,9 @@ export default function Home() {
                 <li key={msg.ts + i} className="border p-3 rounded">
                   <p>{msg.text}</p>
                   <p className="text-sm text-gray-600">
-                    Sent at:{' '}
+                    Sent at:{" "}
                     {new Date(
-                      Number(msg.ts.split('.')[0]) * 1000
+                      Number(msg.ts.split(".")[0]) * 1000
                     ).toLocaleString()}
                   </p>
                 </li>
