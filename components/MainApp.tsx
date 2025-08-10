@@ -63,10 +63,10 @@ export default function MainApp() {
     async function fetchTeam() {
       try {
         console.log("hhjshd")
-        const res = await axios.get("/api/teams");
+        const res = await axios.get("/api/teams",{});
         console.log("-----",res.data)
       } catch (error) {
-        console.error("Failed to fetch team", error);
+        console.error("Failed to fetchjhg team", error);
       }
     }
     fetchTeam();
