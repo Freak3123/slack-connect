@@ -1,14 +1,26 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Slack } from "lucide-react"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Slack } from "lucide-react";
 
 interface ConnectSlackProps {
-  onConnect: () => void
+  Url: string;
+  isConnected: boolean;
+  onContinue: () => void;
 }
 
-export function ConnectSlack({ onConnect }: ConnectSlackProps) {
+export function ConnectSlack({
+  Url,
+  isConnected,
+  onContinue,
+}: ConnectSlackProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
@@ -17,15 +29,31 @@ export function ConnectSlack({ onConnect }: ConnectSlackProps) {
             <Slack className="w-6 h-6 text-purple-600" />
           </div>
           <CardTitle>Connect to Slack</CardTitle>
-          <CardDescription>Connect your Slack workspace to start sending and scheduling messages</CardDescription>
+          <CardDescription>
+            Connect your Slack workspace to start sending and scheduling
+            messages
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button onClick={onConnect} className="w-full" size="lg">
-            <Slack className="w-4 h-4 mr-2" />
-            Connect Slack Workspace
-          </Button>
+          {!isConnected ? (
+            <a
+              href={`${Url}/slack/install`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ display: "block" }}
+            >
+              <Button className="w-full" size="lg">
+                <Slack className="w-4 h-4 mr-2" />
+                Install Slack App
+              </Button>
+            </a>
+          ) : (
+            <Button className="w-full" size="lg" onClick={onContinue}>
+              Continue
+            </Button>
+          )}
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
