@@ -3,9 +3,6 @@ import { NextResponse } from "next/server";
 import axios from "axios";
 
 
-
-
-
 export async function GET() {
   try {
     const backendRes = await axios.get(`${process.env.BACKEND_URL}/teams`, {
@@ -13,7 +10,7 @@ export async function GET() {
     });
 
 
-    return NextResponse.json(backendRes.data, { status: backendRes.status });
+    return NextResponse.json(backendRes.data);
   } catch (error) {
     console.error("Failed to fetch teams:", error);
     return NextResponse.json(
