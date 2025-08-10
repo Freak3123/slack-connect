@@ -39,11 +39,7 @@ interface Recipients {
 }
 
 export default function MainApp() {
-  // Only one team
   const [team, setTeam] = useState<Team>({ teamId: "", teamName: "" });
-
-
-  // Recipients & selection
   const [recipients, setRecipients] = useState<Recipient[]>([]);
   const [selectedRecipientId, setSelectedRecipientId] = useState("");
   const [selectedRecipientName, setSelectedRecipientName] = useState("");
@@ -51,21 +47,19 @@ export default function MainApp() {
     "channel" | "user"
   >("channel");
 
-  // Messages and UI states
   const [message, setMessage] = useState("");
   const [scheduledDateTime, setScheduledDateTime] = useState("");
   const [scheduledMessages, setScheduledMessages] = useState<ScheduledMessage[]>([]);
   const [sentMessages, setSentMessages] = useState<SentMessage[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch single team on mount
+  // Fetch team
   useEffect(() => {
     async function fetchTeam() {
       try {
         const res = await axios.get("/api/teams");
-        console.log(res.data)
-        if (res.data.teams && res.data.teams.length > 0) {
-          setTeam(res.data.teams[0]); // only one team expected
+        if (res.data.teams?.length > 0) {
+          setTeam(res.data.teams[0]);
         }
       } catch (error) {
         console.error("Failed to fetch team", error);
@@ -74,10 +68,9 @@ export default function MainApp() {
     fetchTeam();
   }, []);
 
-  // Fetch recipients once team is set
+  // Fetch recipients
   useEffect(() => {
     if (!team.teamId) return;
-
     async function fetchRecipients() {
       setLoading(true);
       try {
@@ -85,7 +78,6 @@ export default function MainApp() {
           params: { teamId: team.teamId },
         });
 
-        // Combine channels and users with type
         const channels = (res.data.channels || []).map((c: Recipients) => ({
           ...c,
           type: "channel" as const,
@@ -102,9 +94,6 @@ export default function MainApp() {
           setSelectedRecipientId(combinedRecipients[0].id);
           setSelectedRecipientName(combinedRecipients[0].name);
           setSelectedRecipientType(combinedRecipients[0].type || "channel");
-        } else {
-          setSelectedRecipientId("");
-          setSelectedRecipientName("");
         }
       } catch (error) {
         console.error("Failed to fetch recipients", error);
@@ -113,68 +102,69 @@ export default function MainApp() {
         setLoading(false);
       }
     }
-
     fetchRecipients();
   }, [team]);
 
-  // Fetch messages when selectedRecipientId or type changes
+  // Fetch messages
   useEffect(() => {
-    if (!selectedRecipientId) {
+    if (!selectedRecipientId || !team.teamId) {
       setScheduledMessages([]);
       setSentMessages([]);
       return;
     }
+    fetchMessages(selectedRecipientId, selectedRecipientType);
+  }, [selectedRecipientId, selectedRecipientType, team.teamId]);
 
-    async function fetchMessages() {
-      setLoading(true);
-      try {
-        const res = await axios.get("/api/messages", {
-          params: { id: selectedRecipientId, type: selectedRecipientType },
-        });
-        const data = res.data;
+  const fetchMessages = async (recipientId: string, type: string) => {
+    setLoading(true);
+    try {
+      const res = await axios.get("/api/messages", {
+        params: {
+          id: recipientId,
+          type,
+          teamId: team.teamId, // ✅ added teamId
+        },
+      });
+      const data = res.data;
 
-        setScheduledMessages(
-          (data.scheduled || []).map((msg: ScheduledMessageAPI) => ({
-            id: msg.scheduled_message_id || msg.id,
-            targetId: selectedRecipientId,
-            recipientName: selectedRecipientName,
-            recipientType: selectedRecipientType,
-            message: msg.text || msg.message,
-            scheduledTime: msg.post_at
-              ? new Date(msg.post_at * 1000).toISOString()
-              : msg.scheduledTime,
-            status: msg.status || "pending",
-          }))
-        );
+      setScheduledMessages(
+        (data.scheduled || []).map((msg: ScheduledMessageAPI) => ({
+          id: msg.scheduled_message_id || msg.id,
+          targetId: recipientId,
+          recipientName: selectedRecipientName,
+          recipientType: selectedRecipientType,
+          message: msg.text || msg.message,
+          scheduledTime: msg.post_at
+            ? new Date(msg.post_at * 1000).toISOString()
+            : msg.scheduledTime,
+          status: msg.status || "pending",
+        }))
+      );
 
-        setSentMessages(
-          (data.history || data.sent || []).map((msg: SentMessageAPI) => ({
-            id: msg.ts || msg.id,
-            targetId: selectedRecipientId,
-            recipientName: selectedRecipientName,
-            recipientType: selectedRecipientType,
-            message: msg.text || msg.message,
-            sentTime: msg.ts
-              ? new Date(Number(msg.ts.split(".")[0]) * 1000).toISOString()
-              : msg.sentTime,
-          }))
-        );
-      } catch (error) {
-        console.error("Failed to fetch messages:", error);
-        setScheduledMessages([]);
-        setSentMessages([]);
-      } finally {
-        setLoading(false);
-      }
+      setSentMessages(
+        (data.history || data.sent || []).map((msg: SentMessageAPI) => ({
+          id: msg.ts || msg.id,
+          targetId: recipientId,
+          recipientName: selectedRecipientName,
+          recipientType: selectedRecipientType,
+          message: msg.text || msg.message,
+          sentTime: msg.ts
+            ? new Date(Number(msg.ts.split(".")[0]) * 1000).toISOString()
+            : msg.sentTime,
+        }))
+      );
+    } catch (error) {
+      console.error("Failed to fetch messages:", error);
+      setScheduledMessages([]);
+      setSentMessages([]);
+    } finally {
+      setLoading(false);
     }
-
-    fetchMessages();
-  }, [selectedRecipientId, selectedRecipientType]);
+  };
 
   const handleRecipientChange = (id: string) => {
     const recipient = recipients.find((r) => r.id === id);
     if (!recipient) return;
-
     setSelectedRecipientId(recipient.id);
     setSelectedRecipientName(recipient.name);
     setSelectedRecipientType(recipient.type || "channel");
@@ -187,40 +177,7 @@ export default function MainApp() {
         data: { scheduled_message_id: messageId, channelId: targetId },
         headers: { "Content-Type": "application/json" },
       });
-      // Refresh messages
-      if (selectedRecipientId) {
-        // reuse fetchMessages logic or call fetchMessages here
-        const res = await axios.get("/api/messages", {
-          params: { id: selectedRecipientId, type: selectedRecipientType },
-        });
-        // update state same as above (for brevity)
-        setScheduledMessages(
-          (res.data.scheduled || []).map((msg: ScheduledMessageAPI) => ({
-            id: msg.scheduled_message_id || msg.id,
-            targetId: selectedRecipientId,
-            recipientName: selectedRecipientName,
-            recipientType: selectedRecipientType,
-            message: msg.text || msg.message,
-            scheduledTime: msg.post_at
-              ? new Date(msg.post_at * 1000).toISOString()
-              : msg.scheduledTime,
-            status: msg.status || "pending",
-          }))
-        );
-
-        setSentMessages(
-          (res.data.history || res.data.sent || []).map((msg: SentMessageAPI) => ({
-            id: msg.ts || msg.id,
-            targetId: selectedRecipientId,
-            recipientName: selectedRecipientName,
-            recipientType: selectedRecipientType,
-            message: msg.text || msg.message,
-            sentTime: msg.ts
-              ? new Date(Number(msg.ts.split(".")[0]) * 1000).toISOString()
-              : msg.sentTime,
-          }))
-        );
-      }
+      await fetchMessages(selectedRecipientId, selectedRecipientType);
     } catch (error) {
       console.error("Failed to cancel scheduled message:", error);
     } finally {
@@ -233,9 +190,7 @@ export default function MainApp() {
       alert("Please select a recipient and enter a message.");
       return;
     }
-
     setLoading(true);
-
     try {
       if (immediate) {
         await axios.post("/api/direct-msg", {
@@ -249,48 +204,15 @@ export default function MainApp() {
           return;
         }
         const timestamp = Math.floor(new Date(scheduledDateTime).getTime() / 1000);
-
         await axios.post("/api/schedule", {
           targetId: selectedRecipientId,
           message,
           time: timestamp,
         });
       }
-
       setMessage("");
       setScheduledDateTime("");
-      // Refresh messages
-      if (selectedRecipientId) {
-        const res = await axios.get("/api/messages", {
-          params: { id: selectedRecipientId, type: selectedRecipientType },
-        });
-        setScheduledMessages(
-          (res.data.scheduled || []).map((msg: ScheduledMessageAPI) => ({
-            id: msg.scheduled_message_id || msg.id,
-            targetId: selectedRecipientId,
-            recipientName: selectedRecipientName,
-            recipientType: selectedRecipientType,
-            message: msg.text || msg.message,
-            scheduledTime: msg.post_at
-              ? new Date(msg.post_at * 1000).toISOString()
-              : msg.scheduledTime,
-            status: msg.status || "pending",
-          }))
-        );
-
-        setSentMessages(
-          (res.data.history || res.data.sent || []).map((msg: SentMessageAPI) => ({
-            id: msg.ts || msg.id,
-            targetId: selectedRecipientId,
-            recipientName: selectedRecipientName,
-            recipientType: selectedRecipientType,
-            message: msg.text || msg.message,
-            sentTime: msg.ts
-              ? new Date(Number(msg.ts.split(".")[0]) * 1000).toISOString()
-              : msg.sentTime,
-          }))
-        );
-      }
+      await fetchMessages(selectedRecipientId, selectedRecipientType);
     } catch (error) {
       console.error("Failed to send/schedule message:", error);
       alert("Failed to send/schedule message. Please try again.");
@@ -334,7 +256,6 @@ export default function MainApp() {
           </select>
         </div>
 
-        {/* Main message composer and messages list */}
         <div className="grid gap-6 md:grid-cols-2">
           <MessageComposer
             recipients={recipients}
@@ -349,7 +270,6 @@ export default function MainApp() {
             loading={loading}
             onSend={sendMessage}
           />
-
           <MessagesList
             selectedRecipientId={selectedRecipientId}
             selectedRecipientName={selectedRecipientName}
