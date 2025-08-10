@@ -54,11 +54,14 @@ export async function GET(req: Request) {
     }
 
     return NextResponse.json(data, { status: res.status });
-  } catch (error: any) {
-    if (error?.response?.data) {
+  } catch (error) {
+    if (error && typeof error === "object" && "response" in error && error.response && typeof error.response === "object" && "data" in error.response) {
+  
       console.error("❌ Failed to fetch messages:", error.response.data);
+    } else if (error instanceof Error) {
+      console.error("❌ Failed to fetch messages:", error.message);
     } else {
-      console.error("❌ Failed to fetch messages:", error.message || error);
+      console.error("❌ Failed to fetch messages:", error);
     }
     return NextResponse.json(
       { error: "Failed to fetch messages" },
