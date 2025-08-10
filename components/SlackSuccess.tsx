@@ -22,7 +22,7 @@ export default function SlackSuccess() {
 
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <p>Connecting to team ... Please wait.</p>
+      <p>Connecting to team {team} ... Please wait.</p>
     </div>
   );
 }
