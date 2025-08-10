@@ -2,19 +2,13 @@
 import { NextResponse } from "next/server";
 import axios from "axios";
 
-interface Team {
-  teamId: string;
-  teamName: string;
-}
 
-interface TeamsResponse {
-  teams: Team[];
-  [key: string]: unknown;
-}
+
+
 
 export async function GET() {
   try {
-    const backendRes = await axios.get<TeamsResponse>(`${process.env.BACKEND_URL}/teams`, {
+    const backendRes = await axios.get(`${process.env.BACKEND_URL}/teams`, {
       headers: { "Content-Type": "application/json" },
     });
 
