@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import axios from "axios";
+
 interface ScheduledMessage {
   id: string;
   [key: string]: unknown;
@@ -9,7 +10,6 @@ interface MessagesResponse {
   scheduled?: ScheduledMessage[];
   [key: string]: unknown;
 }
-
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -26,13 +26,22 @@ export async function GET(req: Request) {
       headers: { "Content-Type": "application/json" },
     });
 
-    // Add scheduled_message_id alias safely if scheduled messages exist
     const data = res.data;
     if (data.scheduled) {
       data.scheduled = (data.scheduled || []).map((msg) => ({
         ...msg,
         scheduled_message_id: msg.id,
       }));
+    }
+
+    if (data.targetName) {
+      data.displayTarget = data.targetName;
+    }
+    if (data.teamName) {
+      data.displayTeam = data.teamName;
+    }
+    if (data.listNames) {
+      data.displayList = data.listNames;
     }
 
     return NextResponse.json(data, { status: res.status });
