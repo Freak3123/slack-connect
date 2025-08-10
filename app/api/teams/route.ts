@@ -18,9 +18,10 @@ export async function GET() {
       headers: { "Content-Type": "application/json" },
     });
 
+
     return NextResponse.json(backendRes.data, { status: backendRes.status });
   } catch (error) {
-    console.error("❌ Failed to fetch teams:", error);
+    console.error("Failed to fetch teams:", error);
     return NextResponse.json(
       { error: "Failed to fetch teams" },
       { status: 500 }
