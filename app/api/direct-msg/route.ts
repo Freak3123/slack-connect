@@ -1,4 +1,4 @@
-// app/api/direct-msg/route.ts
+
 import { NextResponse } from "next/server";
 import axios from "axios";
 
@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     // Send data to backend Express API
     const backendResponse = await axios.post(
       `${process.env.BACKEND_URL}/send`,
-      { targetId, message } // exactly what backend expects
+      { targetId, message } 
     );
 
     return NextResponse.json(backendResponse.data);

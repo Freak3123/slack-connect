@@ -6,6 +6,7 @@ import axios from "axios";
 
 export default function SlackSuccess() {
   const router = useRouter();
+  
   const searchParams = useSearchParams();
 
   const [error, setError] = useState<string | null>(null);

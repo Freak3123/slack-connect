@@ -69,7 +69,7 @@ export default function Home() {
   );
   const [sentMessages, setSentMessages] = useState<SentMessage[]>([]);
   const [loading, setLoading] = useState(false);
-  const backendUrl = process.env.BACKEND_URL || "http://localhost:3001";
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001";
 
   // Fetch teams on mount
   useEffect(() => {
