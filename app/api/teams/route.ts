@@ -5,7 +5,7 @@ import axios from "axios";
 
 export async function GET() {
   try {
-    const backendRes = await axios.get(`${process.env.BACKEND_URL}/teams`, {
+    const backendRes = await axios.get(`${process.env.BACKEND_URL}/teams/`, {
       headers: { "Content-Type": "application/json" },
     });
 
