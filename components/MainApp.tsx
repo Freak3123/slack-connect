@@ -62,11 +62,13 @@ export default function MainApp() {
   useEffect(() => {
     async function fetchTeam() {
       try {
-        console.log("hhjshd")
-        const res = await axios.get("/api/teams",{});
-        console.log("-----",res.data)
+        const res = await axios.get("/api/teams");
+        console.log(res.data)
+        if (res.data.teams && res.data.teams.length > 0) {
+          setTeam(res.data.teams[0]); // only one team expected
+        }
       } catch (error) {
-        console.error("Failed to fetchjhg team", error);
+        console.error("Failed to fetch team", error);
       }
     }
     fetchTeam();
