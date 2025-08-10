@@ -7,9 +7,7 @@ export async function GET(req:Request) {
   try {
     console.log("jhdsfghsgsgdjfghsuy--g-")
     console.log(process.env.BACKEND_URL);
-    const backendRes = await axios.get(`http://localhost:3001/teams`, {
-      headers: { "Content-Type": "application/json" },
-    });
+    const backendRes = await axios.get(`http://localhost:3001/teams`);
 
 
     return NextResponse.json(backendRes.data);
