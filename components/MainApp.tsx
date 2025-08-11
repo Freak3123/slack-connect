@@ -126,6 +126,9 @@ export default function MainApp() {
         },
       });
       const data = res.data;
+      console.log(data);
+
+
 
       setScheduledMessages(
         (data.scheduled || []).map((msg: ScheduledMessageAPI) => ({
