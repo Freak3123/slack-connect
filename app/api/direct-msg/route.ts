@@ -4,19 +4,17 @@ import axios from "axios";
 
 export async function POST(req: Request) {
   try {
-    const { targetId, message } = await req.json(); // match backend fields
+    const { targetId, message, teamId } = await req.json();
 
-    if (!targetId || !message) {
+    if (!targetId || !message || !teamId) {
       return NextResponse.json(
-        { error: "ID and message are required" },
+        { error: "targetId, message, and teamId are required" },
         { status: 400 }
       );
     }
-
-    // Send data to backend Express API
     const backendResponse = await axios.post(
       `${process.env.BACKEND_URL}/send`,
-      { targetId, message } 
+      { targetId, message, teamId }
     );
 
     return NextResponse.json(backendResponse.data);

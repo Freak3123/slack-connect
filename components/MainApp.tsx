@@ -185,41 +185,47 @@ export default function MainApp() {
     }
   };
 
-  const sendMessage = async (immediate: boolean) => {
-    if (!selectedRecipientId || !message.trim()) {
-      alert("Please select a recipient and enter a message.");
-      return;
-    }
-    setLoading(true);
-    try {
-      if (immediate) {
-        await axios.post("/api/direct-msg", {
-          targetId: selectedRecipientId,
-          message,
-        });
-      } else {
-        if (!scheduledDateTime) {
-          alert("Please select a date and time to schedule the message.");
-          setLoading(false);
-          return;
-        }
-        const timestamp = Math.floor(new Date(scheduledDateTime).getTime() / 1000);
-        await axios.post("/api/schedule", {
-          targetId: selectedRecipientId,
-          message,
-          time: timestamp,
-        });
+const sendMessage = async (immediate: boolean) => {
+  if (!selectedRecipientId || !message.trim()) {
+    alert("Please select a recipient and enter a message.");
+    return;
+  }
+
+  setLoading(true);
+  try {
+    if (immediate) {
+      await axios.post("/api/direct-msg", {
+        targetId: selectedRecipientId,
+        message,
+        teamId: team.teamId,
+      });
+    } else {
+      if (!scheduledDateTime) {
+        alert("Please select a date and time to schedule the message.");
+        setLoading(false);
+        return;
       }
-      setMessage("");
-      setScheduledDateTime("");
-      await fetchMessages(selectedRecipientId, selectedRecipientType);
-    } catch (error) {
-      console.error("Failed to send/schedule message:", error);
-      alert("Failed to send/schedule message. Please try again.");
-    } finally {
-      setLoading(false);
+
+      const timestamp = Math.floor(new Date(scheduledDateTime).getTime() / 1000);
+
+      await axios.post("/api/schedule", {
+        targetId: selectedRecipientId,
+        message,
+        time: timestamp,
+        teamId: team.teamId,
+      });
     }
-  };
+
+    setMessage("");
+    setScheduledDateTime("");
+    await fetchMessages(selectedRecipientId, selectedRecipientType);
+  } catch (error) {
+    console.error("Failed to send/schedule message:", error);
+    alert("Failed to send/schedule message. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   if (!team.teamId) {
     return <p>Loading team data...</p>;
@@ -230,30 +236,9 @@ export default function MainApp() {
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="text-center py-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Slack Connect UI Demo
+            Slack Connect
           </h1>
           <p className="text-gray-600">Team: {team.teamName}</p>
-        </div>
-
-        {/* Recipients dropdown */}
-        <div className="mb-6 max-w-sm mx-auto">
-          <select
-            className="w-full p-2 border rounded"
-            value={selectedRecipientId}
-            onChange={(e) => handleRecipientChange(e.target.value)}
-            disabled={loading}
-          >
-            {recipients.length === 0 && (
-              <option value="" disabled>
-                No recipients found
-              </option>
-            )}
-            {recipients.map((recipient) => (
-              <option key={recipient.id} value={recipient.id}>
-                {recipient.name}
-              </option>
-            ))}
-          </select>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
