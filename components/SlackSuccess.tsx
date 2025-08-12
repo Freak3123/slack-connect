@@ -25,14 +25,6 @@ export default function SlackSuccess() {
           { params: { code } }
         );
 
-        const team = res.data.team;
-
-        if (team) {
-          // Save team info or connection flags
-          localStorage.setItem("isConnected", "true");
-          localStorage.setItem("teamName", team.name || team.id || "unknown");
-        }
-
         // Redirect to your app main page
         router.replace("/");
       } catch (err) {
