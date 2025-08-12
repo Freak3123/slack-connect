@@ -6,16 +6,16 @@ Slack Connect is a full-stack application that enables users to connect their Sl
 
 - **Frontend (Next.js + Tailwind CSS)**
 
-  GitHub: [freak3123/slack-connect](freak3123/slack-connect)
+  GitHub: [ https://github.com/Freak3123/slack-connect]( https://github.com/Freak3123/slack-connect)
 
   Live: [https://slack-connect-silk.vercel.app/](https://slack-connect-silk.vercel.app/)
 
 - **Backend (Node.js + Express + MongoDB)**
 
-  GitHub: [freak3123/slack-connect-backend](freak3123/slack-connect-backend)
+  GitHub: [ https://github.com/Freak3123/slack-connect-backend](https://github.com/Freak3123/slack-connect-backend)
 
   Live: [https://slack-connect-backend-1.onrender.com](https://slack-connect-backend-1.onrender.com)
-
+  
 ## 📦 Setup Instructions
 
 ### Prerequisites
@@ -55,6 +55,13 @@ npm run dev
 ```
 
 **5.** Open your browser at `http://localhost:3000` (or your configured port).
+
+
+## My Deployment Details
+
+- The **frontend** of this project is hosted on **Vercel** — providing fast, globally distributed serverless hosting optimized for Next.js apps.
+
+- The **backend** API server is hosted on **Render** — a reliable cloud platform suitable for running Node.js Express applications with MongoDB connectivity.
 
 # 🏗 Architectural Overview
 
