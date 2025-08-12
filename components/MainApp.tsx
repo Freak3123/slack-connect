@@ -9,6 +9,12 @@ import {
   SentMessage,
 } from "@/components/MessagesList";
 
+interface MainAppProps {
+  backendUrl: string;
+  teamId: string;
+  setIsConnected: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
 interface Team {
   teamId: string;
   teamName: string;
@@ -38,7 +44,11 @@ interface Recipients {
   type?: "user" | "channel";
 }
 
-export default function MainApp() {
+export default function MainApp({
+  backendUrl,
+  teamId,
+  setIsConnected,
+}: MainAppProps) {
   const [team, setTeam] = useState<Team>({ teamId: "", teamName: "" });
   const [recipients, setRecipients] = useState<Recipient[]>([]);
   const [selectedRecipientId, setSelectedRecipientId] = useState("");
@@ -49,7 +59,9 @@ export default function MainApp() {
 
   const [message, setMessage] = useState("");
   const [scheduledDateTime, setScheduledDateTime] = useState("");
-  const [scheduledMessages, setScheduledMessages] = useState<ScheduledMessage[]>([]);
+  const [scheduledMessages, setScheduledMessages] = useState<
+    ScheduledMessage[]
+  >([]);
   const [sentMessages, setSentMessages] = useState<SentMessage[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -128,8 +140,6 @@ export default function MainApp() {
       const data = res.data;
       console.log(data);
 
-
-
       setScheduledMessages(
         (data.scheduled || []).map((msg: ScheduledMessageAPI) => ({
           id: msg.scheduled_message_id || msg.id,
@@ -188,47 +198,59 @@ export default function MainApp() {
     }
   };
 
-const sendMessage = async (immediate: boolean) => {
-  if (!selectedRecipientId || !message.trim()) {
-    alert("Please select a recipient and enter a message.");
-    return;
-  }
-
-  setLoading(true);
-  try {
-    if (immediate) {
-      await axios.post("/api/direct-msg", {
-        targetId: selectedRecipientId,
-        message,
-        teamId: team.teamId,
-      });
-    } else {
-      if (!scheduledDateTime) {
-        alert("Please select a date and time to schedule the message.");
-        setLoading(false);
-        return;
-      }
-
-      const timestamp = Math.floor(new Date(scheduledDateTime).getTime() / 1000);
-
-      await axios.post("/api/schedule", {
-        targetId: selectedRecipientId,
-        message,
-        time: timestamp,
-        teamId: team.teamId,
-      });
+  const sendMessage = async (immediate: boolean) => {
+    if (!selectedRecipientId || !message.trim()) {
+      alert("Please select a recipient and enter a message.");
+      return;
     }
 
-    setMessage("");
-    setScheduledDateTime("");
-    await fetchMessages(selectedRecipientId, selectedRecipientType);
-  } catch (error) {
-    console.error("Failed to send/schedule message:", error);
-    alert("Failed to send/schedule message. Please try again.");
-  } finally {
-    setLoading(false);
-  }
-};
+    setLoading(true);
+    try {
+      if (immediate) {
+        await axios.post("/api/direct-msg", {
+          targetId: selectedRecipientId,
+          message,
+          teamId: team.teamId,
+        });
+      } else {
+        if (!scheduledDateTime) {
+          alert("Please select a date and time to schedule the message.");
+          setLoading(false);
+          return;
+        }
+
+        const timestamp = Math.floor(
+          new Date(scheduledDateTime).getTime() / 1000
+        );
+
+        await axios.post("/api/schedule", {
+          targetId: selectedRecipientId,
+          message,
+          time: timestamp,
+          teamId: team.teamId,
+        });
+      }
+
+      setMessage("");
+      setScheduledDateTime("");
+      await fetchMessages(selectedRecipientId, selectedRecipientType);
+    } catch (error) {
+      console.error("Failed to send/schedule message:", error);
+      alert("Failed to send/schedule message. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await axios.post(`${backendUrl}/logout`, { teamId });
+      setIsConnected(false);
+      console.log("✅ Logged out successfully");
+    } catch (error) {
+      console.error("❌ Logout failed:", error);
+    }
+  };
 
   if (!team.teamId) {
     return <p>Loading team data...</p>;
@@ -268,6 +290,12 @@ const sendMessage = async (immediate: boolean) => {
           />
         </div>
       </div>
+      <button
+        onClick={handleLogout}
+        className="fixed bottom-6 right-6 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full shadow-lg transition-colors duration-200"
+      >
+        Logout
+      </button>
     </div>
   );
 }

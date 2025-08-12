@@ -50,5 +50,5 @@ export default function Home() {
     );
   }
 
-  return <MainApp />;
+  return <MainApp backendUrl={backendUrl} teamId={teamId??""} setIsConnected={setIsConnected}/>;
 }
