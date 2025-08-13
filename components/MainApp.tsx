@@ -244,7 +244,7 @@ export default function MainApp({
 
   const handleLogout = async () => {
     try {
-      await axios.post(`${backendUrl}/logout/${teamId}` );
+      await axios.post(`${backendUrl}/slack/logout/${teamId}` );
       setIsConnected(false);
       console.log("✅ Logged out successfully");
     } catch (error) {
